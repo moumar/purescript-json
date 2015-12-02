@@ -15,6 +15,7 @@ import Data.Either
 import Data.Int
 import Data.Maybe
 import Data.Function
+import Data.Identity
 import Data.Tuple
 import Data.Traversable
 import Data.List(fromList,toList,List(..))
@@ -125,6 +126,9 @@ instance mapFromJSON :: (FromJSON a) => FromJSON (M.Map String a) where
             Left  l -> fail l
     parseJSON i = fail $ show i ++ " is not (Map String a)."
 
+instance identityFromJSON :: (FromJSON a) => FromJSON (Identity a) where
+    parseJSON a = Identity <$> parseJSON a
+
 (.:) :: forall a. (FromJSON a) => JObject -> String -> JParser a
 (.:) obj key = case M.lookup key obj of
     Nothing -> Left $ "key " ++ show key ++ " not present"
@@ -211,6 +215,9 @@ instance eitherToJSON :: (ToJSON a, ToJSON b) => ToJSON (Either a b) where
 
 instance mapToJSON :: (ToJSON a) => ToJSON (M.Map String a) where
     toJSON m = JObject $ map toJSON m
+
+instance identityToJSON :: (ToJSON a) => toJSON (Identity a) where
+    toJSON (Identity a) = toJSON a
 
 instance maybeToJSON :: (ToJSON a) => ToJSON (Maybe a) where
     toJSON Nothing  = JNull
