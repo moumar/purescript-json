@@ -216,7 +216,7 @@ instance eitherToJSON :: (ToJSON a, ToJSON b) => ToJSON (Either a b) where
 instance mapToJSON :: (ToJSON a) => ToJSON (M.Map String a) where
     toJSON m = JObject $ map toJSON m
 
-instance identityToJSON :: (ToJSON a) => toJSON (Identity a) where
+instance identityToJSON :: (ToJSON a) => ToJSON (Identity a) where
     toJSON (Identity a) = toJSON a
 
 instance maybeToJSON :: (ToJSON a) => ToJSON (Maybe a) where
