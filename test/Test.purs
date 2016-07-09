@@ -1,27 +1,35 @@
 module Test.Main where
 
-import Prelude
-import Control.Monad.Eff
-import Control.Monad.Eff.Exception
+import Prelude (Unit, bind, unit, ($), (<>))
+import Control.Monad.Eff (Eff)
+import Control.Monad.Aff (Aff)
+import Control.Monad.Eff.Console (CONSOLE())
 
 import Data.List (List(..), (:))
-import qualified Data.Set as S
-import qualified Data.Map as M
-import Data.Tuple
-import Data.Maybe
+import Data.Set as S
+import Data.Map as M
+import Data.Tuple (Tuple(..))
+import Data.Maybe (Maybe(..))
 import Data.Either
 
-import Data.JSON
+import Data.JSON (JValue(..), encode, decode)
 
-import Test.PSpec
-import Test.PSpec.Mocha
-import Test.Assert.Simple
+import Test.Spec (Spec(), describe, it)
+import Test.Spec.Runner (run)
+import Test.Spec.Assertions (shouldEqual)
+import Test.Spec.Reporter.Console (consoleReporter)
+import Node.Process (PROCESS())
 
-itDecode t = it $ t ++ " should decode"
+itDecode :: forall r. String -> Aff r Unit -> Spec r Unit
+itDecode t = it $ t <> " should decode"
 
-itEncode t = it $ t ++ " should encode"
+itEncode :: forall r. String -> Aff r Unit -> Spec r Unit
+itEncode t = it $ t <> " should encode"
 
-main = runMocha $ do
+infix 1 shouldEqual as @=?
+
+main :: Eff (process :: PROCESS, console :: CONSOLE) Unit
+main = run [consoleReporter] $ do
   describe "FromJSON" $ do
     itDecode "Number1" $ Just 12.0 @=? (decode "12" :: Maybe Number)
     itDecode "Number2" $ Just 12.3 @=? (decode "12.3" :: Maybe Number)
@@ -31,7 +39,7 @@ main = runMocha $ do
     itDecode "Unit"    $ Just unit @=? (decode "null" :: Maybe Unit)
 
     itDecode "Array"   $ Just [1,2,3,2,1] @=? (decode "[1,2,3,2,1]" :: Maybe (Array Int))
-    itDecode "Set"     $ Just (S.fromList $ 1.0 : 2.0 : 3.0 : Nil) @=? (decode "[1,2,3,2,1]" :: Maybe (S.Set Number))
+    itDecode "Set"     $ Just (S.fromFoldable $ [1.0,2.0,3.0]) @=? (decode "[1,2,3,2,1]" :: Maybe (S.Set Number))
     itDecode "Tuple"   $ Just (Tuple "kevin" 18.0)   @=? (decode "[\"kevin\", 18]" :: Maybe (Tuple String Number))
     itDecode "Map"     $ Just (M.fromList $ Tuple "a" 3 : Tuple "b" 2 : Nil) @=? (decode "{\"a\": 1, \"b\": 2, \"a\": 3}" :: Maybe (M.Map String Int))
 
@@ -55,7 +63,7 @@ main = runMocha $ do
     itEncode "Unit"    $ "null" @=? encode unit
 
     itEncode "Array"   $ "[1.1,2.2,3.3,2.2,1.1]" @=? encode [1.1,2.2,3.3,2.2,1.1]
-    itEncode "Set"     $ "[1,2,3]" @=? encode (S.fromList $ 1:2:3:2:1:Nil)
+    itEncode "Set"     $ "[1,2,3]" @=? encode (S.fromFoldable $ [1,2,3,2,1])
     itEncode "Tuple"   $ "[\"kevin\",18]" @=? encode (Tuple "kevin" 18)
     itEncode "Map"     $ "{\"a\":1.2,\"b\":2.1}" @=? encode (M.fromList $ Tuple "a" 1.2 : Tuple "b" 2.1 : Nil)
 
